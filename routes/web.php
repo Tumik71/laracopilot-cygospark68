@@ -1,59 +1,93 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Admin\AdminAuthController;
-use App\Http\Controllers\Admin\DashboardController;
-use App\Http\Controllers\Admin\BlogController;
-use App\Http\Controllers\Admin\GalleryController;
-use App\Http\Controllers\Admin\VideoController;
-use App\Http\Controllers\Admin\VipController;
-use App\Http\Controllers\Admin\SubscriberController;
 use App\Http\Controllers\PublicController;
+use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\Auth\TwoFactorController;
+use App\Http\Controllers\Admin\AdminController;
+use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\SubscriptionController;
+use App\Http\Controllers\Admin\GalleryController;
+use App\Http\Controllers\Admin\BlogController;
+use App\Http\Controllers\Admin\CommentController;
+use App\Http\Controllers\Admin\ThemeController;
+use App\Http\Controllers\Admin\ExtensionController;
 use App\Http\Controllers\StripeController;
+use App\Http\Controllers\FrontGalleryController;
+use App\Http\Controllers\FrontBlogController;
 
-// =====================
-// VEŘEJNÉ STRÁNKY
-// =====================
-Route::get('/', [PublicController::class, 'home'])->name('home');
-Route::get('/blog', [PublicController::class, 'blog'])->name('blog');
-Route::get('/blog/{slug}', [PublicController::class, 'blogPost'])->name('blog.show');
-Route::get('/galerie', [PublicController::class, 'gallery'])->name('gallery');
-Route::get('/video-chat', [PublicController::class, 'videoChat'])->name('video.chat');
-Route::get('/vip', [PublicController::class, 'vipInfo'])->name('vip.info');
+// ── Veřejné stránky ────────────────────────────────────────────
+Route::get('/', [PublicController::class, 'index'])->name('home');
+Route::get('/galerie', [FrontGalleryController::class, 'index'])->name('gallery.index');
+Route::get('/galerie/{id}', [FrontGalleryController::class, 'show'])->name('gallery.show');
+Route::post('/galerie/{id}/hodnoceni', [FrontGalleryController::class, 'rate'])->name('gallery.rate');
+Route::post('/galerie/{id}/komentar', [FrontGalleryController::class, 'comment'])->name('gallery.comment');
+Route::get('/blog', [FrontBlogController::class, 'index'])->name('blog.index');
+Route::get('/blog/{slug}', [FrontBlogController::class, 'show'])->name('blog.show');
+Route::post('/blog/{id}/komentar', [FrontBlogController::class, 'comment'])->name('blog.comment');
 Route::get('/kontakt', [PublicController::class, 'contact'])->name('contact');
 Route::post('/kontakt', [PublicController::class, 'sendContact'])->name('contact.send');
+Route::get('/vip', [PublicController::class, 'vip'])->name('vip');
 
-// =====================
-// VIP / STRIPE
-// =====================
-Route::get('/vip/prihlaseni', [StripeController::class, 'showLogin'])->name('vip.login');
-Route::post('/vip/prihlaseni', [StripeController::class, 'login'])->name('vip.login.post');
-Route::post('/vip/odhlaseni', [StripeController::class, 'logout'])->name('vip.logout');
-Route::get('/vip/registrace', [StripeController::class, 'showRegister'])->name('vip.register');
-Route::post('/vip/registrace', [StripeController::class, 'register'])->name('vip.register.post');
-Route::get('/vip/predplatne', [StripeController::class, 'subscribe'])->name('vip.subscribe');
-Route::post('/vip/checkout', [StripeController::class, 'checkout'])->name('vip.checkout');
-Route::get('/vip/uspech', [StripeController::class, 'success'])->name('vip.success');
-Route::get('/vip/zruseni', [StripeController::class, 'cancel'])->name('vip.cancel');
+// ── Autentizace ────────────────────────────────────────────────
+Route::get('/prihlaseni', [LoginController::class, 'showLogin'])->name('login');
+Route::post('/prihlaseni', [LoginController::class, 'login']);
+Route::post('/odhlaseni', [LoginController::class, 'logout'])->name('logout');
+Route::get('/registrace', [RegisterController::class, 'showRegister'])->name('register');
+Route::post('/registrace', [RegisterController::class, 'register']);
+
+// ── 2FA ────────────────────────────────────────────────────────
+Route::get('/2fa/overeni', [TwoFactorController::class, 'show'])->name('2fa.show');
+Route::post('/2fa/overeni', [TwoFactorController::class, 'verify'])->name('2fa.verify');
+Route::get('/2fa/nastaveni', [TwoFactorController::class, 'setup'])->name('2fa.setup');
+Route::post('/2fa/aktivovat', [TwoFactorController::class, 'activate'])->name('2fa.activate');
+Route::post('/2fa/deaktivovat', [TwoFactorController::class, 'deactivate'])->name('2fa.deactivate');
+
+// ── Stripe ─────────────────────────────────────────────────────
+Route::get('/predplatne/pokladna', [StripeController::class, 'checkout'])->name('stripe.checkout');
+Route::get('/predplatne/uspech', [StripeController::class, 'success'])->name('stripe.success');
+Route::get('/predplatne/zruseno', [StripeController::class, 'cancel'])->name('stripe.cancel');
 Route::post('/stripe/webhook', [StripeController::class, 'webhook'])->name('stripe.webhook');
-Route::get('/vip/obsah', [StripeController::class, 'vipContent'])->name('vip.content');
-Route::get('/vip/video/{id}', [StripeController::class, 'vipVideo'])->name('vip.video');
 
-// =====================
-// ADMIN AUTENTIZACE
-// =====================
-Route::get('/admin/login', [AdminAuthController::class, 'showLogin'])->name('admin.login');
-Route::post('/admin/login', [AdminAuthController::class, 'login'])->name('admin.login.post');
-Route::post('/admin/logout', [AdminAuthController::class, 'logout'])->name('admin.logout');
+// ── Admin ──────────────────────────────────────────────────────
+Route::get('/admin/login', [AdminController::class, 'showLogin'])->name('admin.login');
+Route::post('/admin/login', [AdminController::class, 'login']);
+Route::post('/admin/logout', [AdminController::class, 'logout'])->name('admin.logout');
+Route::get('/admin/dashboard', [AdminController::class, 'dashboard'])->name('admin.dashboard');
 
-// =====================
-// ADMIN DASHBOARD
-// =====================
-Route::get('/admin', [DashboardController::class, 'index'])->name('admin.dashboard');
+// Uživatelé
+Route::get('/admin/uzivatele', [UserController::class, 'index'])->name('admin.users.index');
+Route::get('/admin/uzivatele/{id}', [UserController::class, 'show'])->name('admin.users.show');
+Route::get('/admin/uzivatele/{id}/upravit', [UserController::class, 'edit'])->name('admin.users.edit');
+Route::put('/admin/uzivatele/{id}', [UserController::class, 'update'])->name('admin.users.update');
+Route::delete('/admin/uzivatele/{id}', [UserController::class, 'destroy'])->name('admin.users.destroy');
+Route::post('/admin/uzivatele/{id}/ban', [UserController::class, 'ban'])->name('admin.users.ban');
+Route::post('/admin/uzivatele/{id}/unban', [UserController::class, 'unban'])->name('admin.users.unban');
 
-// =====================
-// ADMIN BLOG
-// =====================
+// Předplatné
+Route::get('/admin/predplatne', [SubscriptionController::class, 'index'])->name('admin.subscriptions.index');
+Route::get('/admin/predplatne/{id}', [SubscriptionController::class, 'show'])->name('admin.subscriptions.show');
+Route::post('/admin/predplatne/{id}/zrusit', [SubscriptionController::class, 'cancel'])->name('admin.subscriptions.cancel');
+Route::get('/admin/plany', [SubscriptionController::class, 'plans'])->name('admin.plans.index');
+Route::get('/admin/plany/vytvorit', [SubscriptionController::class, 'createPlan'])->name('admin.plans.create');
+Route::post('/admin/plany', [SubscriptionController::class, 'storePlan'])->name('admin.plans.store');
+Route::get('/admin/plany/{id}/upravit', [SubscriptionController::class, 'editPlan'])->name('admin.plans.edit');
+Route::put('/admin/plany/{id}', [SubscriptionController::class, 'updatePlan'])->name('admin.plans.update');
+Route::delete('/admin/plany/{id}', [SubscriptionController::class, 'destroyPlan'])->name('admin.plans.destroy');
+
+// Galerie
+Route::get('/admin/galerie', [GalleryController::class, 'index'])->name('admin.gallery.index');
+Route::get('/admin/galerie/ke-schvaleni', [GalleryController::class, 'pending'])->name('admin.gallery.pending');
+Route::get('/admin/galerie/vytvorit', [GalleryController::class, 'create'])->name('admin.gallery.create');
+Route::post('/admin/galerie', [GalleryController::class, 'store'])->name('admin.gallery.store');
+Route::get('/admin/galerie/{id}/upravit', [GalleryController::class, 'edit'])->name('admin.gallery.edit');
+Route::put('/admin/galerie/{id}', [GalleryController::class, 'update'])->name('admin.gallery.update');
+Route::delete('/admin/galerie/{id}', [GalleryController::class, 'destroy'])->name('admin.gallery.destroy');
+Route::post('/admin/galerie/{id}/schvalit', [GalleryController::class, 'approve'])->name('admin.gallery.approve');
+Route::post('/admin/galerie/{id}/zamítnout', [GalleryController::class, 'reject'])->name('admin.gallery.reject');
+
+// Blog
 Route::get('/admin/blog', [BlogController::class, 'index'])->name('admin.blog.index');
 Route::get('/admin/blog/vytvorit', [BlogController::class, 'create'])->name('admin.blog.create');
 Route::post('/admin/blog', [BlogController::class, 'store'])->name('admin.blog.store');
@@ -61,38 +95,22 @@ Route::get('/admin/blog/{id}/upravit', [BlogController::class, 'edit'])->name('a
 Route::put('/admin/blog/{id}', [BlogController::class, 'update'])->name('admin.blog.update');
 Route::delete('/admin/blog/{id}', [BlogController::class, 'destroy'])->name('admin.blog.destroy');
 
-// =====================
-// ADMIN GALERIE
-// =====================
-Route::get('/admin/galerie', [GalleryController::class, 'index'])->name('admin.gallery.index');
-Route::get('/admin/galerie/pridatfoto', [GalleryController::class, 'create'])->name('admin.gallery.create');
-Route::post('/admin/galerie', [GalleryController::class, 'store'])->name('admin.gallery.store');
-Route::get('/admin/galerie/{id}/upravit', [GalleryController::class, 'edit'])->name('admin.gallery.edit');
-Route::put('/admin/galerie/{id}', [GalleryController::class, 'update'])->name('admin.gallery.update');
-Route::delete('/admin/galerie/{id}', [GalleryController::class, 'destroy'])->name('admin.gallery.destroy');
+// Komentáře
+Route::get('/admin/komentare', [CommentController::class, 'index'])->name('admin.comments.index');
+Route::post('/admin/komentare/{id}/schvalit', [CommentController::class, 'approve'])->name('admin.comments.approve');
+Route::delete('/admin/komentare/{id}', [CommentController::class, 'destroy'])->name('admin.comments.destroy');
 
-// =====================
-// ADMIN VIDEO
-// =====================
-Route::get('/admin/video', [VideoController::class, 'index'])->name('admin.video.index');
-Route::get('/admin/video/pridat', [VideoController::class, 'create'])->name('admin.video.create');
-Route::post('/admin/video', [VideoController::class, 'store'])->name('admin.video.store');
-Route::get('/admin/video/{id}/upravit', [VideoController::class, 'edit'])->name('admin.video.edit');
-Route::put('/admin/video/{id}', [VideoController::class, 'update'])->name('admin.video.update');
-Route::delete('/admin/video/{id}', [VideoController::class, 'destroy'])->name('admin.video.destroy');
+// Theme Builder
+Route::get('/admin/vzhled', [ThemeController::class, 'index'])->name('admin.theme.index');
+Route::post('/admin/vzhled', [ThemeController::class, 'update'])->name('admin.theme.update');
+Route::post('/admin/vzhled/reset', [ThemeController::class, 'reset'])->name('admin.theme.reset');
+Route::post('/admin/vzhled/komponenty', [ThemeController::class, 'updateComponents'])->name('admin.theme.components');
+Route::post('/admin/vzhled/exportovat', [ThemeController::class, 'export'])->name('admin.theme.export');
+Route::post('/admin/vzhled/importovat', [ThemeController::class, 'import'])->name('admin.theme.import');
 
-// =====================
-// ADMIN VIP OBSAH
-// =====================
-Route::get('/admin/vip', [VipController::class, 'index'])->name('admin.vip.index');
-Route::get('/admin/vip/pridat', [VipController::class, 'create'])->name('admin.vip.create');
-Route::post('/admin/vip', [VipController::class, 'store'])->name('admin.vip.store');
-Route::get('/admin/vip/{id}/upravit', [VipController::class, 'edit'])->name('admin.vip.edit');
-Route::put('/admin/vip/{id}', [VipController::class, 'update'])->name('admin.vip.update');
-Route::delete('/admin/vip/{id}', [VipController::class, 'destroy'])->name('admin.vip.destroy');
-
-// =====================
-// ADMIN PŘEDPLATITELÉ
-// =====================
-Route::get('/admin/predplatitele', [SubscriberController::class, 'index'])->name('admin.subscribers.index');
-Route::delete('/admin/predplatitele/{id}', [SubscriberController::class, 'destroy'])->name('admin.subscribers.destroy');
+// Rozšíření
+Route::get('/admin/rozsireni', [ExtensionController::class, 'index'])->name('admin.extensions.index');
+Route::post('/admin/rozsireni/{key}/aktivovat', [ExtensionController::class, 'activate'])->name('admin.extensions.activate');
+Route::post('/admin/rozsireni/{key}/deaktivovat', [ExtensionController::class, 'deactivate'])->name('admin.extensions.deactivate');
+Route::get('/admin/rozsireni/{key}/nastaveni', [ExtensionController::class, 'settings'])->name('admin.extensions.settings');
+Route::post('/admin/rozsireni/{key}/nastaveni', [ExtensionController::class, 'saveSettings'])->name('admin.extensions.save');

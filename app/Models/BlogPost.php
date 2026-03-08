@@ -3,26 +3,25 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class BlogPost extends Model
 {
-    use HasFactory;
-
     protected $fillable = [
-        'title', 'slug', 'content', 'excerpt', 'image',
-        'category', 'author', 'published', 'vip_only',
-        'views', 'meta_description'
+        'title', 'slug', 'content', 'excerpt',
+        'image_path', 'category', 'published',
     ];
 
     protected $casts = [
         'published' => 'boolean',
-        'vip_only' => 'boolean',
-        'views' => 'integer',
     ];
 
-    public function getExcerptAttribute($value)
+    public function comments()
     {
-        return $value ?: \Illuminate\Support\Str::limit(strip_tags($this->content), 150);
+        return $this->morphMany(Comment::class, 'commentable');
+    }
+
+    public function getImageUrlAttribute(): string
+    {
+        return $this->image_path ? asset('storage/' . $this->image_path) : asset('images/blog-placeholder.jpg');
     }
 }

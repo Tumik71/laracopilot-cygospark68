@@ -3,17 +3,40 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class GalleryItem extends Model
 {
-    use HasFactory;
-
     protected $fillable = [
-        'title', 'description', 'image', 'category', 'vip_only'
+        'title', 'description', 'image_path', 'category',
+        'status', 'user_id', 'approved_at',
     ];
 
     protected $casts = [
-        'vip_only' => 'boolean',
+        'approved_at' => 'datetime',
     ];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function comments()
+    {
+        return $this->morphMany(Comment::class, 'commentable');
+    }
+
+    public function ratings()
+    {
+        return $this->morphMany(Rating::class, 'rateable');
+    }
+
+    public function getImageUrlAttribute(): string
+    {
+        return $this->image_path ? asset('storage/' . $this->image_path) : asset('images/placeholder.jpg');
+    }
+
+    public function getAverageRatingAttribute(): float
+    {
+        return $this->ratings()->avg('value') ?? 0;
+    }
 }
